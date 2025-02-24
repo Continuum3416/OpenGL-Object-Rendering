@@ -5,132 +5,57 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <iostream>
 
-// Shader source code
-const char* vertexShaderSource = R"(
-    #version 330 core
-    layout (location = 0) in vec3 aPos;  // Position
-    layout (location = 1) in vec3 aColor; // Color
-    out vec3 ourColor;  // Output color to fragment shader
-    uniform mat4 transform;
-
-    void main() {
-        gl_Position = transform * vec4(aPos, 1.0);
-        ourColor = aColor; // Pass color to fragment shader
-    }
-)";
-
-const char* fragmentShaderSource = R"(
-    #version 330 core
-    in vec3 ourColor;  // Color passed from the vertex shader
-    out vec4 FragColor;
-
-    void main() {
-        FragColor = vec4(ourColor, 1.0f); // Set the color of the fragment
-    }
-)";
+#include "common/init_opengl.h"
+#include "common/read_file.h"
+#include "common/compile_shaders.h"
 
 // Vertices and colors for the cube
 float vertices[] = {
-    // Positions         // Colors (RGB)
-    -0.5f, -0.5f,  0.5f,  1.0f, 0.0f, 0.0f,  // Front face (red)
-     0.5f, -0.5f,  0.5f,  0.0f, 1.0f, 0.0f,  // Front face (green)
-     0.5f,  0.5f,  0.5f,  0.0f, 0.0f, 1.0f,  // Front face (blue)
-    -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 0.0f,  // Front face (yellow)
+    // Positions          // Colors (RGB)
+    -0.5f, -0.5f,  0.5f,  1.0f, 0.0f, 0.0f,  // Front (red)
+     0.5f, -0.5f,  0.5f,  0.0f, 1.0f, 0.0f,  // Front (green)
+     0.5f,  0.5f,  0.5f,  0.0f, 0.0f, 1.0f,  // Front (blue)
+    -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 0.0f,  // Front (yellow)
 
-    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, 1.0f,  // Back face (cyan)
-     0.5f, -0.5f, -0.5f,  1.0f, 0.0f, 1.0f,  // Back face (magenta)
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  // Back face (white)
-    -0.5f,  0.5f, -0.5f,  0.5f, 0.5f, 0.5f,  // Back face (gray)
+    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, 1.0f,  // Back (cyan)
+     0.5f, -0.5f, -0.5f,  1.0f, 0.0f, 1.0f,  // Back (magenta)
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  // Back (white)
+    -0.5f,  0.5f, -0.5f,  0.5f, 0.5f, 0.5f,  // Back (gray)
 
-    -0.5f, -0.5f,  0.5f,  1.0f, 0.0f, 0.0f,  // Bottom face (red)
-     0.5f, -0.5f,  0.5f,  0.0f, 1.0f, 0.0f,  // Bottom face (green)
-     0.5f, -0.5f, -0.5f,  0.0f, 0.0f, 1.0f,  // Bottom face (blue)
-    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 0.0f,  // Bottom face (yellow)
+    -0.5f, -0.5f,  0.5f,  1.0f, 0.0f, 0.0f,  // Bottom (red)
+     0.5f, -0.5f,  0.5f,  0.0f, 1.0f, 0.0f,  // Bottom (green)
+     0.5f, -0.5f, -0.5f,  0.0f, 0.0f, 1.0f,  // Bottom (blue)
+    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 0.0f,  // Bottom (yellow)
 
-    -0.5f,  0.5f,  0.5f,  0.0f, 1.0f, 1.0f,  // Top face (cyan)
-     0.5f,  0.5f,  0.5f,  1.0f, 0.0f, 1.0f,  // Top face (magenta)
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  // Top face (white)
-    -0.5f,  0.5f, -0.5f,  0.5f, 0.5f, 0.5f,  // Top face (gray)
+    -0.5f,  0.5f,  0.5f,  0.0f, 1.0f, 1.0f,  // Top (cyan)
+     0.5f,  0.5f,  0.5f,  1.0f, 0.0f, 1.0f,  // Top (magenta)
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  // Top (white)
+    -0.5f,  0.5f, -0.5f,  0.5f, 0.5f, 0.5f,  // Top (gray)
 
-    -0.5f, -0.5f,  0.5f,  1.0f, 0.0f, 0.0f,  // Left face (red)
-    -0.5f,  0.5f,  0.5f,  0.0f, 1.0f, 0.0f,  // Left face (green)
-    -0.5f,  0.5f, -0.5f,  0.0f, 0.0f, 1.0f,  // Left face (blue)
-    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 0.0f,  // Left face (yellow)
+    -0.5f, -0.5f,  0.5f,  1.0f, 0.0f, 0.0f,  // Left (red)
+    -0.5f,  0.5f,  0.5f,  0.0f, 1.0f, 0.0f,  // Left (green)
+    -0.5f,  0.5f, -0.5f,  0.0f, 0.0f, 1.0f,  // Left (blue)
+    -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 0.0f,  // Left (yellow)
 
-     0.5f, -0.5f,  0.5f,  0.0f, 1.0f, 1.0f,  // Right face (cyan)
-     0.5f,  0.5f,  0.5f,  1.0f, 0.0f, 1.0f,  // Right face (magenta)
-     0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  // Right face (white)
-     0.5f, -0.5f, -0.5f,  0.5f, 0.5f, 0.5f   // Right face (gray)
+     0.5f, -0.5f,  0.5f,  0.0f, 1.0f, 1.0f,  // Right (cyan)
+     0.5f,  0.5f,  0.5f,  1.0f, 0.0f, 1.0f,  // Right (magenta)
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  // Right (white)
+     0.5f, -0.5f, -0.5f,  0.5f, 0.5f, 0.5f   // Right (gray)
 };
 
 // Indices for the cube's faces
 unsigned int indices[] = {
-    0, 1, 2,  0, 2, 3,  // Front face
-    4, 5, 6,  4, 6, 7,  // Back face
-    8, 9, 10, 8, 10, 11, // Bottom face
-    12, 13, 14, 12, 14, 15, // Top face
-    16, 17, 18, 16, 18, 19, // Left face
-    20, 21, 22, 20, 22, 23  // Right face
+    0, 1, 2,  0, 2, 3,  // Front
+    4, 5, 6,  4, 6, 7,  // Back
+    8, 9, 10, 8, 10, 11, // Bottom
+    12, 13, 14, 12, 14, 15, // Top
+    16, 17, 18, 16, 18, 19, // Left
+    20, 21, 22, 20, 22, 23  // Right
 };
 
-// GLFW window setup
-GLFWwindow* window;
-int width = 800, height = 600;
 
 // Shader program setup
-unsigned int vertexShader, fragmentShader, shaderProgram;
 unsigned int VAO, VBO, EBO;
-
-void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
-    glViewport(0, 0, width, height);  // Set the OpenGL viewport to match the new window size
-}
-
-void initOpenGL() {
-    // Initialize GLFW
-    if (!glfwInit()) {
-        std::cerr << "GLFW initialization failed!" << std::endl;
-        exit(EXIT_FAILURE);
-    }
-
-    // Create windowed mode window and OpenGL context
-    window = glfwCreateWindow(width, height, "Rotating Cube", NULL, NULL);
-    if (!window) {
-        std::cerr << "Failed to create GLFW window!" << std::endl;
-        glfwTerminate();
-        exit(EXIT_FAILURE);
-    }
-
-    glfwMakeContextCurrent(window);
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-
-    // Initialize GLAD
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-        std::cerr << "Failed to initialize GLAD!" << std::endl;
-        exit(EXIT_FAILURE);
-    }
-}
-
-void compileShaders() {
-    // Vertex shader
-    vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-    glCompileShader(vertexShader);
-
-    // Fragment shader
-    fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-    glCompileShader(fragmentShader);
-
-    // Shader program
-    shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram);
-
-    // Delete shaders after linking them
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
-}
 
 void setupBuffers() {
     // Create and bind VAO, VBO, and EBO
@@ -157,9 +82,12 @@ void setupBuffers() {
     glBindVertexArray(0);
 }
 
+GLFWwindow* window;
+const int width = 1000, height = 1000;
+
 int main() {
-    initOpenGL();
-    compileShaders();
+    initOpenGL(window, width, height);
+    compileShaders("shaders/cube/vertex_shader.glsl", "shaders/cube/fragment_shader.glsl");
     setupBuffers();
 
     // Matrix and transformation setup
@@ -207,4 +135,4 @@ int main() {
 
 // Build & Run:
 // cmake --build .\build\ --config Debug; .\build\Debug\cube.exe
-// cmake --build .\build\ --config Release; .\build\Release\main.exe
+// cmake --build .\build\ --config Release; .\build\Release\cube.exe

@@ -2,7 +2,6 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
 
-// Vertex Shader source code
 const char* vertexShaderSource = R"(
     #version 330 core
     layout (location = 0) in vec3 aPos;
@@ -11,7 +10,6 @@ const char* vertexShaderSource = R"(
     }
 )";
 
-// Fragment Shader source code
 const char* fragmentShaderSource = R"(
     #version 330 core
     out vec4 FragColor;
@@ -122,7 +120,7 @@ int main() {
         // Clear screen
         glClear(GL_COLOR_BUFFER_BIT);
 
-        // Use shader program and draw the triangle
+        // draw triangle
         glUseProgram(shaderProgram);
         glBindVertexArray(VAO);
         glDrawArrays(GL_TRIANGLES, 0, 3);

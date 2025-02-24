@@ -3,203 +3,144 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <cmath>
+
 #include <vector>
 #include <iostream>
+#include <cmath>
 #define M_PI 3.14157f
 
-// Vertex Shader source code
-const char* vertexShaderSource = R"(
-    #version 330 core
-    layout(location = 0) in vec3 aPos;
-    uniform mat4 model;
-    uniform mat4 view;
-    uniform mat4 projection;
-    void main()
-    {
-        gl_Position = projection * view * model * vec4(aPos, 1.0);
-    })";
+#include "common/init_opengl.h"
+#include "common/read_file.h"
+#include "common/compile_shaders.h"
 
-// Fragment Shader source code
-const char* fragmentShaderSource = R"(
-    #version 330 core
-    out vec4 FragColor;
-    void main()
-    {
-        FragColor = vec4(0.8f, 0.2f, 0.2f, 1.0f); // Red color
-    })";
+std::vector<float> sphereVertices;
+std::vector<unsigned int> sphereIndices;
 
-// Function to compile shaders
-GLuint compileShader(GLenum type, const char* source)
-{
-    GLuint shader = glCreateShader(type);
-    glShaderSource(shader, 1, &source, nullptr);
-    glCompileShader(shader);
 
-    // Check for compilation errors
-    GLint success;
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-    if (!success) {
-        char infoLog[512];
-        glGetShaderInfoLog(shader, 512, nullptr, infoLog);
-        std::cerr << "Shader compilation failed: " << infoLog << std::endl;
-    }
-    return shader;
-}
-
-// Function to link shaders into a program
-GLuint createShaderProgram(const char* vertexShaderSource, const char* fragmentShaderSource)
-{
-    GLuint vertexShader = compileShader(GL_VERTEX_SHADER, vertexShaderSource);
-    GLuint fragmentShader = compileShader(GL_FRAGMENT_SHADER, fragmentShaderSource);
-
-    GLuint shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram);
-
-    // Check for linking errors
-    GLint success;
-    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-    if (!success) {
-        char infoLog[512];
-        glGetProgramInfoLog(shaderProgram, 512, nullptr, infoLog);
-        std::cerr << "Program linking failed: " << infoLog << std::endl;
-    }
-
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
-
-    return shaderProgram;
-}
-
-// Function to generate sphere vertices
-std::vector<float> generateSphereVertices(float radius, unsigned int sectorCount, unsigned int stackCount)
-{
-    std::vector<float> vertices;
-
-    float x, y, z, xy;                              // vertex position
-    float sectorStep = 2 * M_PI / sectorCount;       // divide a circle into sectors
-    float stackStep = M_PI / stackCount;             // divide a sphere into stacks
+// Sphere generation function
+void generateSphere(float radius, int sector_count, int stack_count,
+                    std::vector<float>& vertices, std::vector<unsigned int>& indices) {
+    float x, y, z, xy;
+    float nx, ny, nz;
+    float lengthInv = 1.0f / radius;
+    float sectorStep = 2 * M_PI / sector_count;
+    float stackStep = M_PI / stack_count;
     float sectorAngle, stackAngle;
 
-    for (unsigned int i = 0; i <= stackCount; ++i)
-    {
-        stackAngle = M_PI / 2 - i * stackStep;        // starting from pi/2 to -pi/2
-        xy = radius * cosf(stackAngle);               // radius at this stack level
-        z = radius * sinf(stackAngle);                // z coordinate at this stack level
+    for (int i = 0; i <= stack_count; ++i) {
+        stackAngle = M_PI / 2 - i * stackStep;
+        xy = radius * cosf(stackAngle);
+        z = radius * sinf(stackAngle);
 
-        // Vertices of the current stack
-        for (unsigned int j = 0; j <= sectorCount; ++j)
-        {
-            sectorAngle = j * sectorStep;             // angle for each sector
-            x = xy * cosf(sectorAngle);               // x coordinate
-            y = xy * sinf(sectorAngle);               // y coordinate
+        for (int j = 0; j <= sector_count; ++j) {
+            sectorAngle = j * sectorStep;
+            x = xy * cosf(sectorAngle);
+            y = xy * sinf(sectorAngle);
+
+            nx = x * lengthInv;
+            ny = y * lengthInv;
+            nz = z * lengthInv;
+
             vertices.push_back(x);
             vertices.push_back(y);
             vertices.push_back(z);
+            vertices.push_back(nx);
+            vertices.push_back(ny);
+            vertices.push_back(nz);
         }
     }
 
-    return vertices;
+    for (int i = 0; i < stack_count; ++i) {
+        int k1 = i * (sector_count + 1);
+        int k2 = k1 + sector_count + 1;
+
+        for (int j = 0; j < sector_count; ++j, ++k1, ++k2) {
+            if (i != 0) {
+                indices.push_back(k1);
+                indices.push_back(k2);
+                indices.push_back(k1 + 1);
+            }
+            if (i != (stack_count - 1)) {
+                indices.push_back(k1 + 1);
+                indices.push_back(k2);
+                indices.push_back(k2 + 1);
+            }
+        }
+    }
 }
 
-// Main function
-int main()
-{
-    // Initialize GLFW
-    if (!glfwInit()) {
-        std::cerr << "Failed to initialize GLFW!" << std::endl;
-        return -1;
-    }
+// Shader program
+unsigned int sphereVAO, sphereVBO, sphereEBO;
 
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+void setupBuffers() {
+    glGenVertexArrays(1, &sphereVAO);
+    glGenBuffers(1, &sphereVBO);
+    glGenBuffers(1, &sphereEBO);
 
-    // Create a windowed mode window and its OpenGL context
-    GLFWwindow* window = glfwCreateWindow(800, 600, "OpenGL Sphere", nullptr, nullptr);
-    if (!window) {
-        std::cerr << "Failed to create GLFW window!" << std::endl;
-        glfwTerminate();
-        return -1;
-    }
+    glBindVertexArray(sphereVAO);
 
-    glfwMakeContextCurrent(window);
-    glfwSetFramebufferSizeCallback(window, [](GLFWwindow*, int width, int height) {
-        glViewport(0, 0, width, height);
-    });
+    glBindBuffer(GL_ARRAY_BUFFER, sphereVBO);
+    glBufferData(GL_ARRAY_BUFFER, sphereVertices.size() * sizeof(float), &sphereVertices[0], GL_STATIC_DRAW);
 
-    // Initialize GLAD
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-        std::cerr << "Failed to initialize GLAD!" << std::endl;
-        return -1;
-    }
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sphereEBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sphereIndices.size() * sizeof(unsigned int), &sphereIndices[0], GL_STATIC_DRAW);
 
-    // Create and compile shader program
-    GLuint shaderProgram = createShaderProgram(vertexShaderSource, fragmentShaderSource);
-
-    // Generate sphere vertices
-    std::vector<float> sphereVertices = generateSphereVertices(1.0f, 36, 18); // radius, sectors, stacks
-
-    // Create VAO, VBO
-    GLuint VAO, VBO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-
-    glBindVertexArray(VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sphereVertices.size() * sizeof(float), sphereVertices.data(), GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
+
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+
     glBindVertexArray(0);
+}
 
-    // Set the clear color and enable depth testing
-    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-    glEnable(GL_DEPTH_TEST);
+// Window settings
+GLFWwindow* window;
+const int width = 1000, height = 1000;
 
-    while (!glfwWindowShouldClose(window))
-    {
-        // Input handling
+// Main function
+int main() {
+    initOpenGL(window, width, height);
+    compileShaders("shaders/sphere/vertex_shader.glsl", "shaders/sphere/fragment_shader.glsl");
+    generateSphere(1.0f, 36, 18, sphereVertices, sphereIndices);
+    setupBuffers();
+
+    glm::mat4 model = glm::mat4(1.0f);
+    glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -3.0f));
+    glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)width / height, 0.1f, 100.0f);
+
+    // Wireframe mode
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // GL_FILL
+    while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
-
-        // Render
+    
+        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+    
         glUseProgram(shaderProgram);
-
-        // Set up transformation matrices
-        glm::mat4 model = glm::mat4(1.0f);
-        glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        glm::mat4 projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
-
-        GLuint modelLoc = glGetUniformLocation(shaderProgram, "model");
-        GLuint viewLoc = glGetUniformLocation(shaderProgram, "view");
-        GLuint projLoc = glGetUniformLocation(shaderProgram, "projection");
-
-        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-        glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
-
-        // Draw the sphere
-        glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, sphereVertices.size() / 3);
+    
+        glm::mat4 transform = projection * view * model;
+        unsigned int transformLoc = glGetUniformLocation(shaderProgram, "transform");
+        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
+    
+        // Enable wireframe mode
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    
+        glBindVertexArray(sphereVAO);
+        glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(sphereIndices.size()), GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
-
+    
+        // Reset to fill mode if needed
+        // glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    
+        model = glm::rotate(model, glm::radians(0.01f), glm::vec3(0.1f, 1.0f, 0.0f));
+    
         glfwSwapBuffers(window);
     }
 
-    // Clean up
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
-    glDeleteProgram(shaderProgram);
-
-    glfwDestroyWindow(window);
     glfwTerminate();
-
     return 0;
 }
-
 
 
 // Build & Run:
