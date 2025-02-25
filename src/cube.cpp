@@ -58,7 +58,6 @@ unsigned int indices[] = {
 unsigned int VAO, VBO, EBO;
 
 void setupBuffers() {
-    // Create and bind VAO, VBO, and EBO
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
     glGenBuffers(1, &EBO);
@@ -96,34 +95,26 @@ int main() {
     glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)width / height, 0.1f, 100.0f);
 
     while (!glfwWindowShouldClose(window)) {
-        // Input handling
         glfwPollEvents();
 
-        // Render
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // Activate shader program
         glUseProgram(shaderProgram);
 
-        // Transformation matrix
         glm::mat4 transform = projection * view * model;
         unsigned int transformLoc = glGetUniformLocation(shaderProgram, "transform");
         glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
 
-        // Draw cube
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
 
-        // Rotate the model
         model = glm::rotate(model, glm::radians(0.1f), glm::vec3(0.1f, 0.3f, 0.5f));
 
-        // Swap buffers
         glfwSwapBuffers(window);
     }
 
-    // Clean up
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
     glDeleteBuffers(1, &EBO);

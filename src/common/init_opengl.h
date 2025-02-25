@@ -18,7 +18,7 @@ void initOpenGL(GLFWwindow*& window, const int& width, const int& height)
     }
 
     // Create windowed mode window and OpenGL context
-    window = glfwCreateWindow(width, height, "Rotating Cube", NULL, NULL);
+    window = glfwCreateWindow(width, height, "Rotating Object", NULL, NULL);
     if (!window) {
         std::cerr << "Failed to create GLFW window!" << std::endl;
         glfwTerminate();

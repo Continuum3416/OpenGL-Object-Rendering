@@ -58,19 +58,25 @@ Same thing for window, but remember to change to backward slash `\` and run with
 
 ## Demo
 
-Rotating Cube:
+Rotating Cube Rendering:
 
 <p align="center">
 <img alt="70k-objects" src="images/rotating-cube.png" width="550">
 </p>
 
-Rotating Sphere:
+Rotating Sphere Rendering:
 
 <p align="center">
 <img alt="70k-objects" src="images/rotating-sphere.png" width="550">
 </p>
 
+Rotating Donut Rendering:
+
+<p align="center">
+<img alt="70k-objects" src="images/rotating-donut.png" width="550">
+</p>
+
 ## Note:
 
- I will add more libraries and write better cmake scripts in the future.
+I will add more libraries and write better cmake scripts in the future.
 
