@@ -13,8 +13,8 @@
 #include "common/read_file.h"
 #include "common/compile_shaders.h"
 
-std::vector<float> sphereVertices;
-std::vector<unsigned int> sphereIndices;
+std::vector<float> vertices;
+std::vector<unsigned int> indices;
 
 
 // Sphere generation function
@@ -27,12 +27,12 @@ void generateSphere(float radius, int sector_count, int stack_count,
     float stackStep = M_PI / stack_count;
     float sectorAngle, stackAngle;
 
-    for (int i = 0; i <= stack_count; ++i) {
+    for (int i{0}; i <= stack_count; ++i) {
         stackAngle = M_PI / 2 - i * stackStep;
         xy = radius * cosf(stackAngle);
         z = radius * sinf(stackAngle);
 
-        for (int j = 0; j <= sector_count; ++j) {
+        for (int j{0}; j <= sector_count; ++j) {
             sectorAngle = j * sectorStep;
             x = xy * cosf(sectorAngle);
             y = xy * sinf(sectorAngle);
@@ -50,11 +50,11 @@ void generateSphere(float radius, int sector_count, int stack_count,
         }
     }
 
-    for (int i = 0; i < stack_count; ++i) {
+    for (int i{0}; i < stack_count; ++i) {
         int k1 = i * (sector_count + 1);
         int k2 = k1 + sector_count + 1;
 
-        for (int j = 0; j < sector_count; ++j, ++k1, ++k2) {
+        for (int j{0}; j < sector_count; ++j, ++k1, ++k2) {
             if (i != 0) {
                 indices.push_back(k1);
                 indices.push_back(k2);
@@ -69,7 +69,7 @@ void generateSphere(float radius, int sector_count, int stack_count,
     }
 }
 
-// Shader program
+
 unsigned int VAO, VBO, EBO;
 
 void setupBuffers() {
@@ -80,10 +80,10 @@ void setupBuffers() {
     glBindVertexArray(VAO);
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sphereVertices.size() * sizeof(float), &sphereVertices[0], GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), &vertices[0], GL_STATIC_DRAW);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sphereIndices.size() * sizeof(unsigned int), &sphereIndices[0], GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), &indices[0], GL_STATIC_DRAW);
 
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
@@ -102,7 +102,7 @@ const int width = 1000, height = 1000;
 int main() {
     initOpenGL(window, width, height);
     compileShaders("shaders/sphere/vertex_shader.glsl", "shaders/sphere/fragment_shader.glsl");
-    generateSphere(1.0f, 36, 18, sphereVertices, sphereIndices);
+    generateSphere(1.0f, 36, 18, vertices, indices);
     setupBuffers();
 
     glm::mat4 model = glm::mat4(1.0f);
@@ -117,17 +117,17 @@ int main() {
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
-        glUseProgram(shaderProgram);
+        glUseProgram(shader_program);
     
         glm::mat4 transform = projection * view * model;
-        unsigned int transformLoc = glGetUniformLocation(shaderProgram, "transform");
+        unsigned int transformLoc = glGetUniformLocation(shader_program, "transform");
         glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
     
         // Enable wireframe mode
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     
         glBindVertexArray(VAO);
-        glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(sphereIndices.size()), GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
     
         // Reset to fill mode if needed

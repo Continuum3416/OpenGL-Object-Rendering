@@ -21,12 +21,12 @@ std::vector<float> vertices;
 std::vector<unsigned int> indices;
 
 void generateTorus() {
-    for (int i = 0; i <= numMajor; ++i) {
+    for (int i{0}; i <= numMajor; ++i) {
         float u = i * 2.0f * M_PI / numMajor;
         float cosU = cos(u);
         float sinU = sin(u);
 
-        for (int j = 0; j <= numMinor; ++j) {
+        for (int j{0}; j <= numMinor; ++j) {
             float v = j * 2.0f * M_PI / numMinor;
             float cosV = cos(v);
             float sinV = sin(v);
@@ -46,8 +46,8 @@ void generateTorus() {
     }
 
     // Create indices for rendering
-    for (int i = 0; i < numMajor; ++i) {
-        for (int j = 0; j < numMinor; ++j) {
+    for (int i{0}; i < numMajor; ++i) {
+        for (int j{0}; j < numMinor; ++j) {
             unsigned int curr = i * (numMinor + 1) + j;
             unsigned int next = (i + 1) * (numMinor + 1) + j;
             unsigned int nextRow = curr + 1;
@@ -69,10 +69,10 @@ void setupBuffers() {
     glBindVertexArray(VAO);
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), &vertices[0], GL_STATIC_DRAW);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), &indices[0], GL_STATIC_DRAW);
 
     // Vertex position
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
@@ -105,10 +105,10 @@ int main() {
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glUseProgram(shaderProgram);
+        glUseProgram(shader_program);
 
         glm::mat4 transform = projection * view * model;
-        unsigned int transformLoc = glGetUniformLocation(shaderProgram, "transform");
+        unsigned int transformLoc = glGetUniformLocation(shader_program, "transform");
         glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
 
         glBindVertexArray(VAO);

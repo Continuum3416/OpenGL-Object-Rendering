@@ -6,7 +6,7 @@
 #include <string>
 #include "read_file.h"
 
-unsigned int shaderProgram;
+unsigned int shader_program;
 
 void compileShaders(const char* vertex, const char* fragment) 
 {
@@ -24,10 +24,10 @@ void compileShaders(const char* vertex, const char* fragment)
     glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
     glCompileShader(fragmentShader);
 
-    shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram);
+    shader_program = glCreateProgram();
+    glAttachShader(shader_program, vertexShader);
+    glAttachShader(shader_program, fragmentShader);
+    glLinkProgram(shader_program);
 
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
