@@ -76,7 +76,7 @@ cmake --build ./build/ --config Debug
 ./build/Debug/{file-name}
 ```
 
-Same thing for window, but remember to change to backward slash `\` and run with .exe instead.
+Same thing for window, but remember to change to backward slash `\` instead.
 
 ## Demo
 
