@@ -6,7 +6,7 @@
 #include <string>
 #include <iostream>
 
-[[nodiscard]]
+//[[nodiscard]]
 std::string readShaderFile(const char* filePath) 
 {
     std::ifstream file(filePath);

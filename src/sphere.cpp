@@ -7,7 +7,7 @@
 #include <vector>
 #include <iostream>
 #include <cmath>
-#define M_PI 3.14157f
+#define M_PI 3.14159f
 
 #include "common/init_opengl.h"
 #include "common/read_file.h"
@@ -80,13 +80,14 @@ void setupBuffers() {
     glBindVertexArray(VAO);
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), &vertices[0], GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), &vertices[0], GL_STATIC_DRAW);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), &indices[0], GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
 
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
+    
 
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
@@ -145,4 +146,4 @@ int main() {
 
 // Build & Run:
 // cmake --build .\build\ --config Debug; .\build\Debug\sphere.exe
-// cmake --build .\build\ --config Release; .\build\Release\main.exe
+// cmake --build .\build\ --config Release; .\build\Release\sphere.exe
