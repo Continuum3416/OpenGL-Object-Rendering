@@ -1,0 +1,63 @@
+cmake_minimum_required(VERSION 3.18)
+project(OpenGLProject C CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_C_STANDARD 17)
+
+# Find system libraries
+find_package(OpenGL REQUIRED)
+
+# Define paths for manually managed dependencies
+set(vcpkg_lib "C:/vcpkg/installed/x64-windows/lib")
+link_directories(vcpkg_lib)
+
+set(LIBRARY_PATH "C:/Libraries/")  # General library path
+set(GLFW_DIR "${LIBRARY_PATH}OpenGL/glfw-3.4")
+set(GLAD_DIR "${LIBRARY_PATH}OpenGL/glad")
+set(GLM_DIR "${LIBRARY_PATH}OpenGL/glm-1.0.1")
+set(GLEW_DIR "${LIBRARY_PATH}OpenGL/glew-2.2.0")
+set(FREEGLUT_DIR "${LIBRARY_PATH}OpenGL/freeglut-msvc")
+
+# Add subdirectories for dependencies that require compilation
+add_subdirectory(${GLFW_DIR} ${CMAKE_BINARY_DIR}/glfw_build)
+
+# Add Glad
+set(GLAD_SRC_DIR "${GLAD_DIR}/src")
+file(GLOB GLAD_SRC_FILES ${GLAD_SRC_DIR}/*.c)
+
+# Define FreeGLUT as an imported library
+add_library(FreeGLUT STATIC IMPORTED)
+set_target_properties(FreeGLUT PROPERTIES
+    IMPORTED_LOCATION "${FREEGLUT_DIR}/lib/x64/freeglut.lib"
+    INTERFACE_INCLUDE_DIRECTORIES "${FREEGLUT_DIR}/include"
+)
+
+# Gather source files
+file(GLOB C_SOURCES "src/*.c")
+file(GLOB CPP_SOURCES "src/*.cpp")
+
+foreach(SOURCE_FILE ${C_SOURCES} ${CPP_SOURCES})
+    get_filename_component(TARGET_NAME ${SOURCE_FILE} NAME_WE)
+    add_executable(${TARGET_NAME} ${SOURCE_FILE} ${GLAD_SRC_FILES})
+    
+    target_include_directories(${TARGET_NAME} PRIVATE
+        ${GLFW_DIR}/include
+        ${GLAD_DIR}/include
+        ${GLM_DIR}
+        ${GLEW_DIR}/include
+        ${FREEGLUT_DIR}/include
+    )
+
+    target_link_libraries(${TARGET_NAME} 
+        glfw 
+        OpenGL::GL 
+        FreeGLUT
+        gdi32 user32
+    )
+
+    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different 
+        "${FREEGLUT_DIR}/bin/x64/freeglut.dll" 
+        $<TARGET_FILE_DIR:${TARGET_NAME}>
+    )
+endforeach()
